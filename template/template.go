@@ -36,13 +36,13 @@ func (i inOut) write(s solution) error {
 
 var stream = inOut{in: bufio.NewScanner(os.Stdin), out: bufio.NewWriter(os.Stdout)}
 
-func getNumOfTestCases(stream inOut) (int, error) {
+func readNumOfTestCases(stream inOut) (int, error) {
 	inp, err := stream.read()
 	if err != nil {
 		return 0, err
 	}
 
-	int64, err := strconv.ParseInt(inp, 10, 32)
+	int64, err := strconv.ParseInt(inp, 10, 64)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +73,7 @@ func IOExample() {
 func SolveExample() {
 	fmt.Println("type number of test cases, press <Enter>:")
 
-	tc, err := getNumOfTestCases(stream)
+	tc, err := readNumOfTestCases(stream)
 	if err != nil {
 		panic(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type solution struct {
@@ -36,13 +37,13 @@ func (i inOut) write(s solution) error {
 
 var stream = inOut{in: bufio.NewScanner(os.Stdin), out: bufio.NewWriter(os.Stdout)}
 
-func getNumOfTestCases(stream inOut) (int, error) {
+func readNumOfTestCases(stream inOut) (int, error) {
 	inp, err := stream.read()
 	if err != nil {
 		return 0, err
 	}
 
-	int64, err := strconv.ParseInt(inp, 10, 32)
+	int64, err := strconv.ParseInt(inp, 10, 64)
 	if err != nil {
 		return 0, err
 	}
@@ -51,7 +52,7 @@ func getNumOfTestCases(stream inOut) (int, error) {
 }
 
 func main() {
-	tc, err := getNumOfTestCases(stream)
+	tc, err := readNumOfTestCases(stream)
 	if err != nil {
 		panic(err)
 	}
@@ -64,30 +65,63 @@ func main() {
 }
 
 func solve(caseNum int, stream inOut) error {
-	matrixSize, err := getMatrixSize(stream)
+	matrixSize, err := readMatrixSize(stream)
 	if err != nil {
 		return err
 	}
 
+	var matrix matrix
 	for i := 1; i <= matrixSize; i++ {
-		// matrixSize rows on their way
-		stream.read()
+		inputRow, err := stream.read()
+		if err != nil {
+			return err
+		}
+
+		rowAsInts, err := parseRowAsInts(inputRow)
+		if err != nil {
+			return err
+		}
+
+		matrix.appendRow(rowAsInts)
 	}
 
-	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("matrixSize = %d", matrixSize)})
+	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("matrixSize = %d + matrixRows = %d", matrixSize, len(matrix.rows))})
 	return nil
 }
 
-func getMatrixSize(stream inOut) (int, error) {
+func readMatrixSize(stream inOut) (int, error) {
 	inp, err := stream.read()
 	if err != nil {
 		return 0, err
 	}
 
-	int64, err := strconv.ParseInt(inp, 10, 32)
+	int64, err := strconv.ParseInt(inp, 10, 64)
 	if err != nil {
 		return 0, err
 	}
 
 	return int(int64), nil
+}
+
+func parseRowAsInts(row string) ([]int, error) {
+	var rowAsInts []int
+
+	for _, strNum := range strings.Split(row, " ") {
+		intNum, err := strconv.ParseInt(strNum, 10, 64)
+		if err != nil {
+			return []int{}, err
+		}
+
+		rowAsInts = append(rowAsInts, int(intNum))
+	}
+
+	return rowAsInts, nil
+}
+
+type matrix struct {
+	rows [][]int
+}
+
+func (m *matrix) appendRow(row []int) {
+	m.rows = append(m.rows, row)
 }
