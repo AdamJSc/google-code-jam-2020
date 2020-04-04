@@ -36,13 +36,18 @@ func (i inOut) write(s solution) error {
 
 var stream = inOut{in: bufio.NewScanner(os.Stdin), out: bufio.NewWriter(os.Stdout)}
 
-func getNumOfTestCases(stream inOut) (int64, error) {
+func getNumOfTestCases(stream inOut) (int, error) {
 	inp, err := stream.read()
 	if err != nil {
 		return 0, err
 	}
 
-	return strconv.ParseInt(inp, 10, 32)
+	int64, err := strconv.ParseInt(inp, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(int64), nil
 }
 
 func solve(caseNum int, stream inOut) error {
@@ -73,7 +78,7 @@ func SolveExample() {
 		panic(err)
 	}
 
-	for i := 1; i <= int(tc); i++ {
+	for i := 1; i <= tc; i++ {
 		if err = solve(i, stream); err != nil {
 			panic(err)
 		}
