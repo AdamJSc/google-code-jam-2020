@@ -14,12 +14,12 @@ type solution struct {
 	output  string
 }
 
-type inOut struct {
+type ioStream struct {
 	in  *bufio.Scanner
 	out *bufio.Writer
 }
 
-func (i inOut) read() (string, error) {
+func (i ioStream) read() (string, error) {
 	if !i.in.Scan() {
 		if err := i.in.Err(); err != nil {
 			return "", err
@@ -30,14 +30,7 @@ func (i inOut) read() (string, error) {
 	return i.in.Text(), nil
 }
 
-func (i inOut) write(s solution) error {
-	fmt.Fprintf(i.out, "Case #%d: %s\n", s.caseNum, s.output)
-	return i.out.Flush()
-}
-
-var stream = inOut{in: bufio.NewScanner(os.Stdin), out: bufio.NewWriter(os.Stdout)}
-
-func readNumOfTestCases(stream inOut) (int, error) {
+func (i ioStream) readInt() (int, error) {
 	inp, err := stream.read()
 	if err != nil {
 		return 0, err
@@ -51,21 +44,28 @@ func readNumOfTestCases(stream inOut) (int, error) {
 	return int(int64), nil
 }
 
+func (i ioStream) write(s solution) error {
+	fmt.Fprintf(i.out, "Case #%d: %s\n", s.caseNum, s.output)
+	return i.out.Flush()
+}
+
+var stream = ioStream{in: bufio.NewScanner(os.Stdin), out: bufio.NewWriter(os.Stdout)}
+
 func main() {
-	tc, err := readNumOfTestCases(stream)
+	numOfTestCases, err := stream.readInt()
 	if err != nil {
 		panic(err)
 	}
 
-	for i := 1; i <= tc; i++ {
+	for i := 1; i <= numOfTestCases; i++ {
 		if err = solve(i, stream); err != nil {
 			panic(err)
 		}
 	}
 }
 
-func solve(caseNum int, stream inOut) error {
-	seq, err := readIntSequence(stream)
+func solve(caseNum int, stream ioStream) error {
+	seq, err := readInts(stream)
 	if err != nil {
 		return err
 	}
@@ -106,23 +106,23 @@ func (s symbol) toString() string {
 	return fmt.Sprintf("%s%d%s", prefix, s.value, suffix)
 }
 
-func readIntSequence(stream inOut) ([]int, error) {
+func readInts(stream ioStream) ([]int, error) {
 	inp, err := stream.read()
 	if err != nil {
 		return []int{}, err
 	}
 
-	var seq []int
+	var ints []int
 	for _, char := range strings.Split(inp, "") {
 		charAsInt, err := strconv.ParseInt(char, 10, 64)
 		if err != nil {
 			return []int{}, err
 		}
 
-		seq = append(seq, int(charAsInt))
+		ints = append(ints, int(charAsInt))
 	}
 
-	return seq, nil
+	return ints, nil
 }
 
 func populateRequiredParentheses(symbols []symbol) {
