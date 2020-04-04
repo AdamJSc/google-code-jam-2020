@@ -75,7 +75,14 @@ func solve(caseNum int, stream inOut) error {
 		symbols = append(symbols, symbol{value: char})
 	}
 
-	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%+v", symbols)})
+	populateRequiredParentheses(symbols)
+
+	var output string
+	for _, symbol := range symbols {
+		output = output + symbol.toString()
+	}
+
+	stream.write(solution{caseNum: caseNum, output: output})
 	return nil
 }
 
@@ -83,6 +90,20 @@ type symbol struct {
 	value              int
 	openingParentheses int
 	closingParentheses int
+}
+
+func (s symbol) toString() string {
+	var prefix, suffix string
+
+	for i := 0; i < s.openingParentheses; i++ {
+		prefix = prefix + "("
+	}
+
+	for i := 0; i < s.closingParentheses; i++ {
+		suffix = suffix + ")"
+	}
+
+	return fmt.Sprintf("%s%d%s", prefix, s.value, suffix)
 }
 
 func readIntSequence(stream inOut) ([]int, error) {
@@ -102,4 +123,30 @@ func readIntSequence(stream inOut) ([]int, error) {
 	}
 
 	return seq, nil
+}
+
+func populateRequiredParentheses(symbols []symbol) {
+	var unresolved int
+	for i := 0; i < len(symbols); i++ {
+		// required number of opening parentheses is the difference between
+		// the current value and the count of unresolved parentheses
+		symbols[i].openingParentheses = symbols[i].value - unresolved
+
+		// determine required number of closed parentheses
+		if i+1 == len(symbols) {
+			// no more symbols after this one, so closing parentheses should
+			// wrap up the current value nicely
+			symbols[i].closingParentheses = symbols[i].value
+			continue
+		}
+		switch {
+		case symbols[i+1].value < symbols[i].value:
+			// next value is smaller, so we need to close off the difference
+			// otherwise we will have too many unresolved parentheses for the next value!
+			symbols[i].closingParentheses = symbols[i].value - symbols[i+1].value
+		}
+
+		// update the number of unresolved parentheses that we now have
+		unresolved = unresolved + symbols[i].openingParentheses - symbols[i].closingParentheses
+	}
 }
