@@ -71,38 +71,42 @@ func solve(caseNum int, stream ioStream) error {
 		return err
 	}
 
-	var schedule activitySchedule
+	sched := schedule{
+		parents: map[string]parent{
+			"cameron": parent{initial: "C"},
+			"jamie":   parent{initial: "J"},
+		},
+	}
 
 	for i := 0; i < numOfActivities; i++ {
+		// parse start and end minutes from each forthcoming input row
+		// and inflate our activity schedule
 		input, err := stream.read()
 		if err != nil {
 			return err
 		}
-
 		pairOfMinutesAfterMidnight := strings.Split(input, " ")
 		if len(pairOfMinutesAfterMidnight) != 2 {
 			return fmt.Errorf("cannot split '%s' into a pair of integers", input)
 		}
-
 		startMinute, err := strconv.ParseInt(pairOfMinutesAfterMidnight[0], 10, 64)
 		if err != nil {
 			return err
 		}
-
 		endMinute, err := strconv.ParseInt(pairOfMinutesAfterMidnight[1], 10, 64)
 		if err != nil {
 			return err
 		}
-
 		activity, err := newActivityFromMinutes(startMinute, endMinute)
 		if err != nil {
 			return err
 		}
-
-		schedule.activities = append(schedule.activities, activity)
+		sched.activities = append(sched.activities, activity)
 	}
 
-	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%+v", schedule)})
+	assignParentsToActivities(&sched)
+
+	stream.write(solution{caseNum: caseNum, output: sched.toString()})
 	return nil
 }
 
@@ -111,13 +115,38 @@ type timespan struct {
 	end   time.Time
 }
 
+func (ts timespan) overlapsWith(t timespan) bool {
+	// check if end of t is equal to or before start of ts
+	if t.end.Equal(ts.start) || t.end.Before(ts.start) {
+		return false
+	}
+
+	// check if start of t is equal to or after end of ts
+	if t.start.Equal(ts.end) || t.start.After(ts.end) {
+		return false
+	}
+
+	return true
+}
+
 type parent struct {
-	occupied []timespan
+	initial   string
+	timetable []timespan
+}
+
+func (p parent) isAvailableFor(t timespan) bool {
+	for _, timespan := range p.timetable {
+		if timespan.overlapsWith(t) {
+			return false
+		}
+	}
+
+	return true
 }
 
 type activity struct {
-	timespan      timespan
-	parentInitial string
+	timespan  timespan
+	parentKey string
 }
 
 func newActivityFromMinutes(start int64, end int64) (activity, error) {
@@ -133,7 +162,38 @@ func newActivityFromMinutes(start int64, end int64) (activity, error) {
 	return activity{timespan: timespan{start: startTime, end: endTime}}, nil
 }
 
-type activitySchedule struct {
+type schedule struct {
 	activities []activity
 	parents    map[string]parent
+}
+
+func (s schedule) toString() string {
+	var output string
+	for _, activity := range s.activities {
+		if activity.parentKey == "" {
+			return "IMPOSSIBLE"
+		}
+		output = output + s.parents[activity.parentKey].initial
+	}
+	return output
+}
+
+func assignParentsToActivities(s *schedule) {
+	for aidx, activity := range s.activities {
+		for pkey, parent := range s.parents {
+			if s.activities[aidx].parentKey != "" {
+				// activity has already been assigned a parent
+				continue
+			}
+			if parent.isAvailableFor(activity.timespan) {
+				// add this activity's timespan to our parent's timetable
+				activityParent := s.parents[pkey]
+				activityParent.timetable = append(activityParent.timetable, activity.timespan)
+				s.parents[pkey] = activityParent
+
+				// assign this parent to our activity
+				s.activities[aidx].parentKey = pkey
+			}
+		}
+	}
 }
