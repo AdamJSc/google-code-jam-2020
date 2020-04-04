@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type solution struct {
@@ -64,6 +65,41 @@ func main() {
 }
 
 func solve(caseNum int, stream inOut) error {
-	stream.write(solution{caseNum: caseNum, output: "output"})
+	seq, err := readIntSequence(stream)
+	if err != nil {
+		return err
+	}
+
+	var symbols []symbol
+	for _, char := range seq {
+		symbols = append(symbols, symbol{value: char})
+	}
+
+	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%+v", symbols)})
 	return nil
+}
+
+type symbol struct {
+	value              int
+	openingParentheses int
+	closingParentheses int
+}
+
+func readIntSequence(stream inOut) ([]int, error) {
+	inp, err := stream.read()
+	if err != nil {
+		return []int{}, err
+	}
+
+	var seq []int
+	for _, char := range strings.Split(inp, "") {
+		charAsInt, err := strconv.ParseInt(char, 10, 64)
+		if err != nil {
+			return []int{}, err
+		}
+
+		seq = append(seq, int(charAsInt))
+	}
+
+	return seq, nil
 }
