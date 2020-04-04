@@ -71,6 +71,8 @@ func solve(caseNum int, stream inOut) error {
 	}
 
 	var matrix matrix
+
+	// parse next matrixSize rows as a matrix
 	for i := 1; i <= matrixSize; i++ {
 		inputRow, err := stream.read()
 		if err != nil {
@@ -82,10 +84,17 @@ func solve(caseNum int, stream inOut) error {
 			return err
 		}
 
-		matrix.appendRow(rowAsInts)
+		matrix.rows = append(matrix.rows, rowAsInts)
 	}
 
-	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%d 0 0", matrix.getTrace())})
+	stream.write(solution{
+		caseNum: caseNum,
+		output: fmt.Sprintf(
+			"%d %d 0",
+			matrix.getTrace(),
+			matrix.getRowsWithRepeatedElements(),
+		),
+	})
 	return nil
 }
 
@@ -122,14 +131,31 @@ type matrix struct {
 	rows [][]int
 }
 
-func (m *matrix) appendRow(row []int) {
-	m.rows = append(m.rows, row)
-}
-
 func (m *matrix) getTrace() int {
 	var trace int
 	for i, row := range m.rows {
 		trace += row[i]
 	}
 	return trace
+}
+
+func (m *matrix) getRowsWithRepeatedElements() int {
+	var count int
+	for _, row := range m.rows {
+		if hasRepeatedInts(row) {
+			count++
+		}
+	}
+	return count
+}
+
+func hasRepeatedInts(s []int) bool {
+	seen := make(map[int]struct{})
+	for _, i := range s {
+		if _, ok := seen[i]; ok {
+			return true
+		}
+		seen[i] = struct{}{}
+	}
+	return false
 }
