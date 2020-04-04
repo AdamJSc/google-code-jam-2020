@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -72,7 +73,6 @@ func solve(caseNum int, stream ioStream) error {
 	}
 
 	sched := schedule{
-		activities: make(map[string]activity),
 		parents: map[string]parent{
 			"cameron": parent{initial: "C"},
 			"jamie":   parent{initial: "J"},
@@ -102,12 +102,15 @@ func solve(caseNum int, stream ioStream) error {
 		if err != nil {
 			return err
 		}
-		sched.activities[activity.getRef()] = activity
+		sched.activities = append(sched.activities, activity)
 	}
 
-	assignParentsToActivities(&sched)
+	if err = assignParentsToActivities(&sched); err != nil {
+		return err
+	}
 
-	stream.write(solution{caseNum: caseNum, output: sched.toString()})
+	output := sched.toString()
+	stream.write(solution{caseNum: caseNum, output: output})
 	return nil
 }
 
@@ -146,8 +149,8 @@ func (p parent) isAvailableFor(t timespan) bool {
 }
 
 type activity struct {
-	timespan  timespan
-	parentKey string
+	timespan      timespan
+	parentInitial string
 }
 
 func (a activity) getRef() string {
@@ -170,37 +173,54 @@ func newActivityFromMinutes(start int64, end int64) (activity, error) {
 }
 
 type schedule struct {
-	activities map[string]activity
+	activities []activity
 	parents    map[string]parent
 }
 
 func (s schedule) toString() string {
 	var output string
 	for _, activity := range s.activities {
-		if activity.parentKey == "" {
+		if activity.parentInitial == "" {
 			return "IMPOSSIBLE"
 		}
-		output = output + s.parents[activity.parentKey].initial
+		output = output + activity.parentInitial
 	}
 	return output
 }
 
-func assignParentsToActivities(s *schedule) {
-	for aidx, activity := range s.activities {
-		for pkey, parent := range s.parents {
-			if s.activities[aidx].parentKey != "" {
-				// activity has already been assigned a parent
-				continue
-			}
-			if parent.isAvailableFor(activity.timespan) {
-				// add this activity's timespan to our parent's timetable
-				activityParent := s.parents[pkey]
-				activityParent.timetable = append(activityParent.timetable, activity.timespan)
-				s.parents[pkey] = activityParent
+func assignParentsToActivities(s *schedule) error {
+	// let's map each activity's ref to its slice index
+	// this way we can iterate over the activity refs in alphabetical order
+	activityKeyMap := make(map[string]int)
+	var activityKeyMapKeys []string
+	for idx, activity := range s.activities {
+		activityKeyMap[activity.getRef()] = idx
+		activityKeyMapKeys = append(activityKeyMapKeys, activity.getRef())
+	}
 
-				// assign this parent to our activity
-				//s.activities[aidx].parentKey = pkey
-			}
+	// sort map keys alphabetically (which is chronological by start date because of the format)
+	sort.Strings(activityKeyMapKeys)
+
+	// iterate over the activities in chronological order
+	// in order to identify an available parent to fulfil each one
+	for _, mapkey := range activityKeyMapKeys {
+		idx := activityKeyMap[mapkey]
+		activity := s.activities[idx]
+		activity.parentInitial = getInitialOfAvailableParentForActivity(activity, s.parents)
+		s.activities[idx] = activity
+	}
+
+	return nil
+}
+
+func getInitialOfAvailableParentForActivity(a activity, parents map[string]parent) string {
+	for key, parent := range parents {
+		if parent.isAvailableFor(a.timespan) {
+			parent.timetable = append(parent.timetable, a.timespan)
+			parents[key] = parent
+			return parent.initial
 		}
 	}
+
+	return ""
 }
