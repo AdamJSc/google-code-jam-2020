@@ -1,6 +1,6 @@
 package main
 
-import "./template"
+import "../template"
 
 func main() {
 	template.Example()
