@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type solution struct {
@@ -69,11 +71,69 @@ func solve(caseNum int, stream ioStream) error {
 		return err
 	}
 
+	var schedule activitySchedule
+
 	for i := 0; i < numOfActivities; i++ {
-		// pairs of activity start and end time on their way
-		stream.read()
+		input, err := stream.read()
+		if err != nil {
+			return err
+		}
+
+		pairOfMinutesAfterMidnight := strings.Split(input, " ")
+		if len(pairOfMinutesAfterMidnight) != 2 {
+			return fmt.Errorf("cannot split '%s' into a pair of integers", input)
+		}
+
+		startMinute, err := strconv.ParseInt(pairOfMinutesAfterMidnight[0], 10, 64)
+		if err != nil {
+			return err
+		}
+
+		endMinute, err := strconv.ParseInt(pairOfMinutesAfterMidnight[1], 10, 64)
+		if err != nil {
+			return err
+		}
+
+		activity, err := newActivityFromMinutes(startMinute, endMinute)
+		if err != nil {
+			return err
+		}
+
+		schedule.activities = append(schedule.activities, activity)
 	}
 
-	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%d", numOfActivities)})
+	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%+v", schedule)})
 	return nil
+}
+
+type timespan struct {
+	start time.Time
+	end   time.Time
+}
+
+type parent struct {
+	occupied []timespan
+}
+
+type activity struct {
+	timespan      timespan
+	parentInitial string
+}
+
+func newActivityFromMinutes(start int64, end int64) (activity, error) {
+	loc, err := time.LoadLocation("UTC")
+	if err != nil {
+		return activity{}, err
+	}
+
+	midnight := time.Date(1970, 1, 1, 0, 0, 0, 0, loc)
+	startTime := midnight.Add(time.Duration(start) * time.Minute)
+	endTime := midnight.Add(time.Duration(end) * time.Minute)
+
+	return activity{timespan: timespan{start: startTime, end: endTime}}, nil
+}
+
+type activitySchedule struct {
+	activities []activity
+	parents    map[string]parent
 }
