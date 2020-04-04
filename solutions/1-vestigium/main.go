@@ -84,15 +84,16 @@ func solve(caseNum int, stream inOut) error {
 			return err
 		}
 
-		matrix.rows = append(matrix.rows, rowAsInts)
+		matrix.rowCol = append(matrix.rowCol, rowAsInts)
 	}
 
 	stream.write(solution{
 		caseNum: caseNum,
 		output: fmt.Sprintf(
-			"%d %d 0",
+			"%d %d %d",
 			matrix.getTrace(),
-			matrix.getRowsWithRepeatedElements(),
+			matrix.countRowsWithRepeatedElements(),
+			matrix.countColsWithRepeatedElements(),
 		),
 	})
 	return nil
@@ -128,21 +129,40 @@ func parseRowAsInts(row string) ([]int, error) {
 }
 
 type matrix struct {
-	rows [][]int
+	rowCol [][]int
 }
 
 func (m *matrix) getTrace() int {
 	var trace int
-	for i, row := range m.rows {
+	for i, row := range m.rowCol {
 		trace += row[i]
 	}
 	return trace
 }
 
-func (m *matrix) getRowsWithRepeatedElements() int {
+func (m *matrix) countRowsWithRepeatedElements() int {
+	return countSlicesThatHaveRepeatedElements(m.rowCol)
+}
+
+func (m *matrix) countColsWithRepeatedElements() int {
+	var colRow [][]int
+
+	size := len(m.rowCol)
+	for i := 0; i < size; i++ {
+		var col []int
+		for j := 0; j < size; j++ {
+			col = append(col, m.rowCol[j][i])
+		}
+		colRow = append(colRow, col)
+	}
+
+	return countSlicesThatHaveRepeatedElements(colRow)
+}
+
+func countSlicesThatHaveRepeatedElements(slices [][]int) int {
 	var count int
-	for _, row := range m.rows {
-		if hasRepeatedInts(row) {
+	for _, slice := range slices {
+		if hasRepeatedInts(slice) {
 			count++
 		}
 	}
