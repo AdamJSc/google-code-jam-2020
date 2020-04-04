@@ -72,6 +72,7 @@ func solve(caseNum int, stream ioStream) error {
 	}
 
 	sched := schedule{
+		activities: make(map[string]activity),
 		parents: map[string]parent{
 			"cameron": parent{initial: "C"},
 			"jamie":   parent{initial: "J"},
@@ -101,7 +102,7 @@ func solve(caseNum int, stream ioStream) error {
 		if err != nil {
 			return err
 		}
-		sched.activities = append(sched.activities, activity)
+		sched.activities[activity.getRef()] = activity
 	}
 
 	assignParentsToActivities(&sched)
@@ -149,6 +150,12 @@ type activity struct {
 	parentKey string
 }
 
+func (a activity) getRef() string {
+	start := a.timespan.start.Format("150405")
+	end := a.timespan.end.Format("150405")
+	return fmt.Sprintf("%s:%s", start, end)
+}
+
 func newActivityFromMinutes(start int64, end int64) (activity, error) {
 	loc, err := time.LoadLocation("UTC")
 	if err != nil {
@@ -163,7 +170,7 @@ func newActivityFromMinutes(start int64, end int64) (activity, error) {
 }
 
 type schedule struct {
-	activities []activity
+	activities map[string]activity
 	parents    map[string]parent
 }
 
@@ -192,7 +199,7 @@ func assignParentsToActivities(s *schedule) {
 				s.parents[pkey] = activityParent
 
 				// assign this parent to our activity
-				s.activities[aidx].parentKey = pkey
+				//s.activities[aidx].parentKey = pkey
 			}
 		}
 	}
