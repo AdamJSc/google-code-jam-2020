@@ -85,7 +85,7 @@ func solve(caseNum int, stream inOut) error {
 		matrix.appendRow(rowAsInts)
 	}
 
-	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("matrixSize = %d + matrixRows = %d", matrixSize, len(matrix.rows))})
+	stream.write(solution{caseNum: caseNum, output: fmt.Sprintf("%d 0 0", matrix.getTrace())})
 	return nil
 }
 
@@ -124,4 +124,12 @@ type matrix struct {
 
 func (m *matrix) appendRow(row []int) {
 	m.rows = append(m.rows, row)
+}
+
+func (m *matrix) getTrace() int {
+	var trace int
+	for i, row := range m.rows {
+		trace += row[i]
+	}
+	return trace
 }
